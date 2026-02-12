@@ -13,7 +13,7 @@ export default function SettingsLayout({
   const { sidebarOpen } = useStore();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
 
       <div
@@ -23,7 +23,7 @@ export default function SettingsLayout({
         )}
       >
         <Header />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto app-content-bg">
           <div className="container mx-auto px-6 py-8">{children}</div>
         </main>
       </div>

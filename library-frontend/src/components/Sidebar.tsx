@@ -39,7 +39,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-50',
+          'fixed top-0 left-0 h-full bg-violet- border-r border-violet-600 transition-all duration-300 z-50',
           sidebarOpen ? 'w-64' : 'w-0 lg:w-20'
         )}
       >

@@ -13,10 +13,14 @@ import { useStore } from '@/store';
 
 export default function IssuesPage() {
   const queryClient = useQueryClient();
-  const { searchQuery } = useStore();
+  const { searchQuery, currentUser } = useStore();
   const [enrichedIssues, setEnrichedIssues] = useState<
     (Issue & { user_details?: UserType; book_details?: Book })[]
   >([]);
+  const isAdmin =
+    currentUser?.is_staff ||
+    currentUser?.is_superuser ||
+    currentUser?.role === 'staff';
 
   const { data: issues, isLoading } = useQuery({
     queryKey: ['issues'],
@@ -57,6 +61,10 @@ export default function IssuesPage() {
   }, [issues, books, users]);
 
   const handleReturn = (id: number) => {
+    if (!isAdmin) {
+      toast.error('Only admins can mark books as returned');
+      return;
+    }
     if (confirm('Are you sure you want to mark this book as returned?')) {
       returnBookMutation.mutate(id);
     }
@@ -215,13 +223,19 @@ export default function IssuesPage() {
                         </span>
                       </td>
                       <td>
-                        <button
-                          onClick={() => handleReturn(issue.id)}
-                          className="btn btn-success text-sm py-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Mark Returned
-                        </button>
+                        {isAdmin ? (
+                          <button
+                            onClick={() => handleReturn(issue.id)}
+                            className="btn btn-success text-sm py-2"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Mark Returned
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-500">
+                            Admin only
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

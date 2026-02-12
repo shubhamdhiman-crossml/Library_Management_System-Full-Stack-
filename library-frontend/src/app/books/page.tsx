@@ -16,6 +16,7 @@ import { useStore } from '@/store';
 export default function BooksPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { searchQuery } = useStore();
@@ -58,10 +59,45 @@ export default function BooksPage() {
     },
   });
 
+  const updateBookMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<BookCreate> }) =>
+      booksService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['books'] });
+      toast.success('Book updated successfully!');
+      setIsViewModalOpen(false);
+      setSelectedBook(null);
+      resetEditBook();
+    },
+    onError: () => {
+      toast.error('Failed to update book');
+    },
+  });
+
+  const deleteBookMutation = useMutation({
+    mutationFn: (id: number) => booksService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['books'] });
+      toast.success('Book deleted successfully!');
+      setIsViewModalOpen(false);
+      setSelectedBook(null);
+      resetEditBook();
+    },
+    onError: () => {
+      toast.error('Failed to delete book');
+    },
+  });
+
   const {
     register: registerBook,
     handleSubmit: handleSubmitBook,
     reset: resetBook,
+  } = useForm<BookCreate>();
+
+  const {
+    register: registerEditBook,
+    handleSubmit: handleSubmitEditBook,
+    reset: resetEditBook,
   } = useForm<BookCreate>();
 
   const {
@@ -92,6 +128,32 @@ export default function BooksPage() {
   const handleIssueClick = (book: Book) => {
     setSelectedBook(book);
     setIsIssueModalOpen(true);
+  };
+
+  const handleViewDetails = (book: Book) => {
+    setSelectedBook(book);
+    setIsViewModalOpen(true);
+    resetEditBook({
+      title: book.title,
+      author: book.author,
+      isbn: book.isbn,
+      category: book.category,
+      publisher: book.publisher,
+      total_copies: book.total_copies,
+      available_copies: book.available_copies,
+    });
+  };
+
+  const onUpdateBook = (data: BookCreate) => {
+    if (!selectedBook) return;
+    updateBookMutation.mutate({ id: selectedBook.id, data });
+  };
+
+  const handleDeleteBook = () => {
+    if (!selectedBook) return;
+    if (confirm('Are you sure you want to delete this book?')) {
+      deleteBookMutation.mutate(selectedBook.id);
+    }
   };
 
   const categories = Array.from(
@@ -178,6 +240,7 @@ export default function BooksPage() {
             <BookCard
               key={book.id}
               book={book}
+              onView={handleViewDetails}
               onIssue={handleIssueClick}
             />
           ))}
@@ -286,6 +349,128 @@ export default function BooksPage() {
             <button type="submit" className="btn btn-primary">
               Add Book
             </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* View / Edit Book Modal */}
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedBook(null);
+        }}
+        title="Book Details"
+        size="lg"
+      >
+        <form
+          onSubmit={handleSubmitEditBook(onUpdateBook)}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title *
+              </label>
+              <input
+                {...registerEditBook('title', { required: true })}
+                className="input"
+                placeholder="Enter book title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Author *
+              </label>
+              <input
+                {...registerEditBook('author', { required: true })}
+                className="input"
+                placeholder="Enter author name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ISBN *
+              </label>
+              <input
+                {...registerEditBook('isbn', { required: true })}
+                className="input"
+                placeholder="Enter ISBN"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category *
+              </label>
+              <input
+                {...registerEditBook('category', { required: true })}
+                className="input"
+                placeholder="e.g., Fiction, Science"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Publisher *
+              </label>
+              <input
+                {...registerEditBook('publisher', { required: true })}
+                className="input"
+                placeholder="Enter publisher"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Total Copies *
+              </label>
+              <input
+                type="number"
+                {...registerEditBook('total_copies', {
+                  required: true,
+                  valueAsNumber: true,
+                })}
+                className="input"
+                min="1"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Available Copies *
+              </label>
+              <input
+                type="number"
+                {...registerEditBook('available_copies', {
+                  required: true,
+                  valueAsNumber: true,
+                })}
+                className="input"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between gap-3 pt-4">
+            <button
+              type="button"
+              onClick={handleDeleteBook}
+              className="btn btn-secondary text-red-600 hover:bg-red-50"
+            >
+              Delete Book
+            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setSelectedBook(null);
+                }}
+                className="btn btn-secondary"
+              >
+                Close
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Update Book
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

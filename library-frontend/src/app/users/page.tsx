@@ -6,15 +6,17 @@ import { Plus, Edit, Trash2, Mail, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/Modal';
 import { usersService } from '@/services/users';
-import type { User, UserCreate } from '@/types';
+import type { User, UserCreate, UserUpdate } from '@/types';
 import { useForm } from 'react-hook-form';
 import { formatRole, formatDate } from '@/lib/utils';
 import { useStore } from '@/store';
 
 export default function UsersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const queryClient = useQueryClient();
-  const { searchQuery } = useStore();
+  const { searchQuery, currentUser, setCurrentUser } = useStore();
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
@@ -45,16 +47,67 @@ export default function UsersPage() {
     },
   });
 
-  const { register, handleSubmit, reset } = useForm<UserCreate>();
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UserUpdate }) =>
+      usersService.update(id, data),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User updated successfully!');
+      setIsEditModalOpen(false);
+      setEditingUser(null);
+      resetEdit();
+      if (currentUser?.id === updated.id) {
+        setCurrentUser(updated);
+        localStorage.setItem('currentUser', JSON.stringify(updated));
+      }
+    },
+    onError: () => {
+      toast.error('Failed to update user');
+    },
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+  } = useForm<UserCreate>();
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleEditSubmit,
+    reset: resetEdit,
+  } = useForm<UserUpdate>();
 
   const onAddUser = (data: UserCreate) => {
     addUserMutation.mutate(data);
+  };
+
+  const onEditUser = (data: UserUpdate) => {
+    if (!editingUser) return;
+    const payload: UserUpdate = { ...data };
+    if (!payload.password) {
+      delete payload.password;
+    }
+    updateUserMutation.mutate({ id: editingUser.id, data: payload });
   };
 
   const handleDelete = (id: number) => {
     if (confirm('Are you sure you want to delete this user?')) {
       deleteUserMutation.mutate(id);
     }
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    setIsEditModalOpen(true);
+    resetEdit({
+      first_name: user.first_name,
+      last_name: user.last_name,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      phone: user.phone || '',
+    });
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -207,7 +260,10 @@ export default function UsersPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
                           <Edit className="w-4 h-4 text-gray-600" />
                         </button>
                         <button
@@ -320,6 +376,113 @@ export default function UsersPage() {
             </button>
             <button type="submit" className="btn btn-primary">
               Add User
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingUser(null);
+        }}
+        title="Edit User"
+        size="lg"
+      >
+        <form onSubmit={handleEditSubmit(onEditUser)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                First Name *
+              </label>
+              <input
+                {...registerEdit('first_name', { required: true })}
+                className="input"
+                placeholder="Enter first name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Last Name *
+              </label>
+              <input
+                {...registerEdit('last_name', { required: true })}
+                className="input"
+                placeholder="Enter last name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username *
+              </label>
+              <input
+                {...registerEdit('username', { required: true })}
+                className="input"
+                placeholder="Enter username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email *
+              </label>
+              <input
+                type="email"
+                {...registerEdit('email', { required: true })}
+                className="input"
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Password
+              </label>
+              <input
+                type="password"
+                {...registerEdit('password')}
+                className="input"
+                placeholder="Leave blank to keep current password"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role *
+              </label>
+              <select
+                {...registerEdit('role', { required: true })}
+                className="input"
+              >
+                <option value="student">Student</option>
+                <option value="staff">Staff</option>
+                <option value="external">External</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone
+              </label>
+              <input
+                {...registerEdit('phone')}
+                className="input"
+                placeholder="Enter phone number (optional)"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingUser(null);
+              }}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Update User
             </button>
           </div>
         </form>

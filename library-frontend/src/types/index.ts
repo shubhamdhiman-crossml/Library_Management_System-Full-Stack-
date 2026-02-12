@@ -8,6 +8,8 @@ export interface User {
   role: 'student' | 'staff' | 'external';
   phone: string;
   is_active: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
   date_joined: string;
 }
 
@@ -19,6 +21,17 @@ export interface UserCreate {
   last_name: string;
   role: 'student' | 'staff' | 'external';
   phone?: string;
+}
+
+export interface UserUpdate {
+  username?: string;
+  email?: string;
+  password?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: 'student' | 'staff' | 'external';
+  phone?: string;
+  is_active?: boolean;
 }
 
 // Book Types

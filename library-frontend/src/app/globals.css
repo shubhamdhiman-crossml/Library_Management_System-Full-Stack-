@@ -105,6 +105,10 @@
 }
 
 @layer utilities {
+  .app-content-bg {
+    @apply bg-gradient-to-br from-white via-purple-100 to-purple-500;
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
@@ -125,7 +129,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #9c3df5;
 }
 
 ::-webkit-scrollbar-thumb {

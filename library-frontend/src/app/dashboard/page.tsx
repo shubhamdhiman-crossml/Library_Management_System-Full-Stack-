@@ -62,7 +62,7 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-white-600 mt-2">
           Welcome back! Here's an overview of your library.
         </p>
       </div>

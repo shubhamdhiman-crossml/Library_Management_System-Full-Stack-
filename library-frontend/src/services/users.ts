@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { User, UserCreate } from '@/types';
+import type { User, UserCreate, UserUpdate } from '@/types';
 
 export const usersService = {
   getAll: async () => {
@@ -20,7 +20,7 @@ export const usersService = {
   },
 
   // Update user
-  update: async (id: number, data: Partial<UserCreate>): Promise<User> => {
+  update: async (id: number, data: UserUpdate): Promise<User> => {
     const response = await api.patch<User>(`/users/${id}/`, data);
     return response.data;
   },
